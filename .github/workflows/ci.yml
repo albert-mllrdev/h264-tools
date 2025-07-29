@@ -1,0 +1,54 @@
+# GitHub Actions CI for carrardt/h264-tools fork
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Windows will use MSYS2, others use native CMake/Make
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up CMake
+      if: runner.os != 'Windows'
+      uses: lukka/get-cmake@v3
+
+    - name: Set up MSYS2
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v3
+      with:
+        update: true
+        install: |
+          mingw-w64-x86_64-toolchain
+          cmake
+
+    - name: Create build directory
+      run: mkdir build && cd build
+
+    - name: Configure project
+      run: |
+        cd build
+        cmake ..
+      shell: bash
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . -- -j$(nproc)
+      shell: bash
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure
+      shell: bash
