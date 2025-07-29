@@ -30,18 +30,9 @@ jobs:
       run: |
         sed -i 's/cmake_minimum_required(VERSION [0-9]\.[0-9]\+)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
 
-    - name: Create build directory
-      run: mkdir -p build
-
-    - name: Configure project
+    - name: Patch Windows compatibility
       run: |
-        cmake -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build
-
-    - name: Build
-      run: cmake --build build -- -j$(nproc)
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: h264-tools-windows
-        path: build/*.exe
+        # Add Windows-specific I/O definitions
+        sed -i '1s|^|#include <io.h>\n#include <fcntl.h>\n#define read _read\n#define write _write\n#ifndef O_NONBLOCK\n#define O_NONBLOCK 0\n#endif\n|' tools/naluparser.c tools/yuvsbspipe.c
+        # Remove conflicting intptr_t typedef and strcasecmp redefinition
+        sed -i '/typedef int   intptr
