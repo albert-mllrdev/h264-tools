@@ -51,11 +51,11 @@ jobs:
         sed -i '7i#define O_NONBLOCK 0' tools/yuvsbspipe.c
         sed -i '8i#endif' tools/yuvsbspipe.c
 
-        # Remove conflicting typedefs in win32.h
+        # Remove conflicting typedefs
         sed -i '/typedef int   intptr_t;/d' ldecod/win32.h
         sed -i '/# *define *strcasecmp _strcmpi/d' ldecod/win32.h
 
-        # Make global ColorComponent and cfgparams static to avoid multiple definitions
+        # Make globals static
         sed -i 's/^int \(ColorComponent\);$/static int \1;/' ldecod/annexb.c
         sed -i 's/^cfgparams_t cfgparams;$/static cfgparams_t cfgparams;/' ldecod/configfile.c
 
@@ -65,8 +65,8 @@ jobs:
         sed -i '3i#include <ws2tcpip.h>' ldecod/rtp.c
 
         # Link ws2_32 in CMakeLists.txt
-        sed -i '/add_executable(ldecod/ a\
-    if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32' CMakeLists.txt
+        sed -i "/add_executable(ldecod/ a\
+if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)" CMakeLists.txt
 
     - name: Create build directory
       run: mkdir -p build
