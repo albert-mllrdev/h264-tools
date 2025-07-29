@@ -56,6 +56,7 @@ jobs:
         sed -i '1i#ifdef _WIN32' ldecod/rtp.c
         sed -i '2i#include <winsock2.h>' ldecod/rtp.c
         sed -i '3i#include <ws2tcpip.h>' ldecod/rtp.c
+        sed -i '4i#endif' ldecod/rtp.c
 
         # Link ws2_32 in CMakeLists.txt after add_executable
         sed -i '/add_executable(ldecod/ a if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)' CMakeLists.txt
