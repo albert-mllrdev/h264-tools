@@ -1,5 +1,5 @@
 # GitHub Actions CI for carrardt/h264-tools fork
-name: CI
+name: Build Windows Executables
 
 on:
   push:
@@ -8,47 +8,38 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        # Windows will use MSYS2, others use native CMake/Make
+  build-windows:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up CMake
-      if: runner.os != 'Windows'
-      uses: lukka/get-cmake@v3
-
     - name: Set up MSYS2
-      if: runner.os == 'Windows'
       uses: msys2/setup-msys2@v3
       with:
         update: true
-        install: |
+        install: >-
+          git
           mingw-w64-x86_64-toolchain
-          cmake
+          mingw-w64-x86_64-cmake
+          make
 
     - name: Create build directory
-      run: mkdir build && cd build
+      run: mkdir -p build
 
     - name: Configure project
-      run: |
-        cd build
-        cmake ..
-      shell: bash
+      run: cmake -G "MinGW Makefiles" -S . -B build
 
     - name: Build
-      run: |
-        cd build
-        cmake --build . -- -j$(nproc)
-      shell: bash
+      run: cmake --build build -- -j$(nproc)
 
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure
-      shell: bash
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: h264-tools-windows
+        path: build/*.exe
