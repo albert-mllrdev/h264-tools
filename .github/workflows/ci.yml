@@ -32,7 +32,7 @@ jobs:
 
     - name: Patch source for Windows I/O and remove conflicts
       run: |
-        # Insert Windows I/O definitions into tools
+        # Patch tools for Windows-specific I/O
         for file in tools/naluparser.c tools/yuvsbspipe.c; do
           sed -i '1i#ifdef _WIN32' "$file"
           sed -i '2i#include <io.h>' "$file"
@@ -45,7 +45,7 @@ jobs:
         done
 
         # Remove conflicting typedefs/macros in win32.h
-        sed -i '/typedef int   intptr_t;/d' ldecod/win32.h
+        sed -i '/typedef int[[:space:]]\+intptr_t;/d' ldecod/win32.h
         sed -i '/# *define *strcasecmp _strcmpi/d' ldecod/win32.h
 
         # Make globals static
@@ -57,9 +57,8 @@ jobs:
         sed -i '2i#include <winsock2.h>' ldecod/rtp.c
         sed -i '3i#include <ws2tcpip.h>' ldecod/rtp.c
 
-        # Link ws2_32 library in CMakeLists.txt
-        sed -i "/add_executable(ldecod/ a\\
-if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)" CMakeLists.txt
+        # Link ws2_32 in CMakeLists.txt after add_executable
+        sed -i '/add_executable(ldecod/ a if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)' CMakeLists.txt
 
     - name: Create build directory
       run: mkdir -p build
