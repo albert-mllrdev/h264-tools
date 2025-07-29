@@ -30,9 +30,61 @@ jobs:
       run: |
         sed -i 's/cmake_minimum_required(VERSION [0-9]\.[0-9]\+)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
 
-    - name: Patch Windows compatibility
+    - name: Patch source for Windows I/O and remove conflicts
       run: |
-        # Add Windows-specific I/O definitions
-        sed -i '1s|^|#include <io.h>\n#include <fcntl.h>\n#define read _read\n#define write _write\n#ifndef O_NONBLOCK\n#define O_NONBLOCK 0\n#endif\n|' tools/naluparser.c tools/yuvsbspipe.c
-        # Remove conflicting intptr_t typedef and strcasecmp redefinition
-        sed -i '/typedef int   intptr
+        # Patch naluparser.c
+        patch -p0 << 'EOF'
+*** Begin Patch to tools/naluparser.c
+*** Update File: tools/naluparser.c
+@@
++#ifdef _WIN32
++#include <io.h>
++#include <fcntl.h>
++#define read _read
++#define write _write
++#ifndef O_NONBLOCK
++#define O_NONBLOCK 0
++#endif
++#endif
+EOF
+        
+        # Patch yuvsbspipe.c
+        patch -p0 << 'EOF'
+*** Begin Patch to tools/yuvsbspipe.c
+*** Update File: tools/yuvsbspipe.c
+@@
++#ifdef _WIN32
++#include <io.h>
++#include <fcntl.h>
++#define read _read
++#define write _write
++#ifndef O_NONBLOCK
++#define O_NONBLOCK 0
++#endif
++#endif
+EOF
+        
+        # Remove conflicting typedefs in win32.h
+        patch -p0 << 'EOF'
+*** Begin Patch to ldecod/win32.h
+*** Update File: ldecod/win32.h
+@@
+-typedef int   intptr_t;
+-# define  strcasecmp _strcmpi
+EOF
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure project
+      run: |
+        cmake -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build
+
+    - name: Build
+      run: cmake --build build -- -j$(nproc)
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: h264-tools-windows
+        path: build/*.exe
