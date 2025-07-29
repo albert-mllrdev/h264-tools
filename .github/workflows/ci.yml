@@ -59,13 +59,14 @@ jobs:
         sed -i 's/^int \(ColorComponent\);$/static int \1;/' ldecod/annexb.c
         sed -i 's/^cfgparams_t cfgparams;$/static cfgparams_t cfgparams;/' ldecod/configfile.c
 
-        # Include winsock2 and link ws2_32 for ntohs/ntohl
+        # Include winsock2 headers
         sed -i '1i#ifdef _WIN32' ldecod/rtp.c
         sed -i '2i#include <winsock2.h>' ldecod/rtp.c
         sed -i '3i#include <ws2tcpip.h>' ldecod/rtp.c
 
+        # Link ws2_32 in CMakeLists.txt
         sed -i '/add_executable(ldecod/ a\
-if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)\n' CMakeLists.txt
+    if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32' CMakeLists.txt
 
     - name: Create build directory
       run: mkdir -p build
