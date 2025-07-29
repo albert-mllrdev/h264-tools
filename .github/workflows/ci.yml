@@ -32,26 +32,19 @@ jobs:
 
     - name: Patch source for Windows I/O and remove conflicts
       run: |
-        # Insert Windows I/O definitions
-        sed -i '1i#ifdef _WIN32' tools/naluparser.c
-        sed -i '2i#include <io.h>' tools/naluparser.c
-        sed -i '3i#include <fcntl.h>' tools/naluparser.c
-        sed -i '4i#define read _read' tools/naluparser.c
-        sed -i '5i#define write _write' tools/naluparser.c
-        sed -i '6i#ifndef O_NONBLOCK' tools/naluparser.c
-        sed -i '7i#define O_NONBLOCK 0' tools/naluparser.c
-        sed -i '8i#endif' tools/naluparser.c
+        # Insert Windows I/O definitions into tools
+        for file in tools/naluparser.c tools/yuvsbspipe.c; do
+          sed -i '1i#ifdef _WIN32' "$file"
+          sed -i '2i#include <io.h>' "$file"
+          sed -i '3i#include <fcntl.h>' "$file"
+          sed -i '4i#define read _read' "$file"
+          sed -i '5i#define write _write' "$file"
+          sed -i '6i#ifndef O_NONBLOCK' "$file"
+          sed -i '7i#define O_NONBLOCK 0' "$file"
+          sed -i '8i#endif' "$file"
+        done
 
-        sed -i '1i#ifdef _WIN32' tools/yuvsbspipe.c
-        sed -i '2i#include <io.h>' tools/yuvsbspipe.c
-        sed -i '3i#include <fcntl.h>' tools/yuvsbspipe.c
-        sed -i '4i#define read _read' tools/yuvsbspipe.c
-        sed -i '5i#define write _write' tools/yuvsbspipe.c
-        sed -i '6i#ifndef O_NONBLOCK' tools/yuvsbspipe.c
-        sed -i '7i#define O_NONBLOCK 0' tools/yuvsbspipe.c
-        sed -i '8i#endif' tools/yuvsbspipe.c
-
-        # Remove conflicting typedefs
+        # Remove conflicting typedefs/macros in win32.h
         sed -i '/typedef int   intptr_t;/d' ldecod/win32.h
         sed -i '/# *define *strcasecmp _strcmpi/d' ldecod/win32.h
 
@@ -59,13 +52,13 @@ jobs:
         sed -i 's/^int \(ColorComponent\);$/static int \1;/' ldecod/annexb.c
         sed -i 's/^cfgparams_t cfgparams;$/static cfgparams_t cfgparams;/' ldecod/configfile.c
 
-        # Include winsock2 headers
+        # Include Windows sockets headers for rtp.c
         sed -i '1i#ifdef _WIN32' ldecod/rtp.c
         sed -i '2i#include <winsock2.h>' ldecod/rtp.c
         sed -i '3i#include <ws2tcpip.h>' ldecod/rtp.c
 
-        # Link ws2_32 in CMakeLists.txt
-        sed -i "/add_executable(ldecod/ a\
+        # Link ws2_32 library in CMakeLists.txt
+        sed -i "/add_executable(ldecod/ a\\
 if (WIN32) target_link_libraries(ldecod PRIVATE ws2_32)" CMakeLists.txt
 
     - name: Create build directory
