@@ -26,11 +26,16 @@ jobs:
           mingw-w64-x86_64-cmake
           make
 
+    - name: Patch CMake minimum version
+      run: |
+        sed -i 's/cmake_minimum_required(VERSION [0-9]\.[0-9]\+)/cmake_minimum_required(VERSION 3.5)/' CMakeLists.txt
+
     - name: Create build directory
       run: mkdir -p build
 
     - name: Configure project
-      run: cmake -G "MinGW Makefiles" -S . -B build
+      run: |
+        cmake -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S . -B build
 
     - name: Build
       run: cmake --build build -- -j$(nproc)
