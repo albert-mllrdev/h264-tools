@@ -32,46 +32,28 @@ jobs:
 
     - name: Patch source for Windows I/O and remove conflicts
       run: |
-        # Patch naluparser.c
-        patch -p0 << 'EOF'
-*** Begin Patch to tools/naluparser.c
-*** Update File: tools/naluparser.c
-@@
-+#ifdef _WIN32
-+#include <io.h>
-+#include <fcntl.h>
-+#define read _read
-+#define write _write
-+#ifndef O_NONBLOCK
-+#define O_NONBLOCK 0
-+#endif
-+#endif
-EOF
-        
-        # Patch yuvsbspipe.c
-        patch -p0 << 'EOF'
-*** Begin Patch to tools/yuvsbspipe.c
-*** Update File: tools/yuvsbspipe.c
-@@
-+#ifdef _WIN32
-+#include <io.h>
-+#include <fcntl.h>
-+#define read _read
-+#define write _write
-+#ifndef O_NONBLOCK
-+#define O_NONBLOCK 0
-+#endif
-+#endif
-EOF
-        
-        # Remove conflicting typedefs in win32.h
-        patch -p0 << 'EOF'
-*** Begin Patch to ldecod/win32.h
-*** Update File: ldecod/win32.h
-@@
--typedef int   intptr_t;
--# define  strcasecmp _strcmpi
-EOF
+        # Insert Windows I/O definitions at top of source files
+        sed -i '1i#ifdef _WIN32' tools/naluparser.c
+        sed -i '2i#include <io.h>' tools/naluparser.c
+        sed -i '3i#include <fcntl.h>' tools/naluparser.c
+        sed -i '4i#define read _read' tools/naluparser.c
+        sed -i '5i#define write _write' tools/naluparser.c
+        sed -i '6i#ifndef O_NONBLOCK' tools/naluparser.c
+        sed -i '7i#define O_NONBLOCK 0' tools/naluparser.c
+        sed -i '8i#endif' tools/naluparser.c
+
+        sed -i '1i#ifdef _WIN32' tools/yuvsbspipe.c
+        sed -i '2i#include <io.h>' tools/yuvsbspipe.c
+        sed -i '3i#include <fcntl.h>' tools/yuvsbspipe.c
+        sed -i '4i#define read _read' tools/yuvsbspipe.c
+        sed -i '5i#define write _write' tools/yuvsbspipe.c
+        sed -i '6i#ifndef O_NONBLOCK' tools/yuvsbspipe.c
+        sed -i '7i#define O_NONBLOCK 0' tools/yuvsbspipe.c
+        sed -i '8i#endif' tools/yuvsbspipe.c
+
+        # Remove conflicting typedefs and macros in win32.h
+        sed -i '/typedef int   intptr_t;/d' ldecod/win32.h
+        sed -i '/# *define *strcasecmp _strcmpi/d' ldecod/win32.h
 
     - name: Create build directory
       run: mkdir -p build
